@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+venv/
+.env
+
+# VS Code
+.vscode/
+
+# ChromaDB vector storage
+chroma_db/
+
+# Uploaded documents
+docs/
+
+# System files
+.DS_Store
+Thumbs.db
