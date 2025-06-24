@@ -48,7 +48,7 @@ OUTPUT FORMAT:
 
 4. Sample Responses
 
-1. Refined Prompt (Concise Version): 
+    1. Refined Prompt (Concise Version): 
 
 Issue: Unexpected $25,000 late fee charged
 
@@ -68,7 +68,7 @@ Next Steps:
 Timeline: Manager review and update within 1 business day
 
 
-2. Chain-of-Thought Enhanced Prompt (Concise): 
+    2. Chain-of-Thought Enhanced Prompt (Concise): 
 
 Issue: $25,000 unexpected late fee on your CloudFlow SaaS account
 
