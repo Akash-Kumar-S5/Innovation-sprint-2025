@@ -39,10 +39,14 @@ ADDITIONAL GUIDANCE:
 
 QUERY: {{user_input}}
 Efficiency Gains: 65% token reduction, 70% cache hit rate, 67% faster response times
+
+
 3. Prompt Injection Mitigation Strategy
 Multi-Layer Defense System
+
 Layer 1: Data Removal
 Completely eliminate {{employee_account_password}} from prompt context. Handle authentication through secure backend systems independent of LLM boundary.
+
 Layer 2: Constitutional Rules
 Implement immutable security protocols that cannot be overridden by user input:
 
