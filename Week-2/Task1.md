@@ -49,6 +49,7 @@ OUTPUT FORMAT:
 4. Sample Responses
 
 1. Refined Prompt (Concise Version): 
+
 Issue: Unexpected $25,000 late fee charged
 
 Analysis:
