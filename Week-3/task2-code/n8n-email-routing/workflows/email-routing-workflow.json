@@ -1,0 +1,284 @@
+{
+  "name": "Email Routing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-query",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f7b1c0e5-8d2a-4c3b-9e1f-2a3b4c5d6e7f",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "process-query"
+    },
+    {
+      "parameters": {
+        "url": "https://api.escuelajs.co/api/v1/users",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+      "name": "Fetch Users API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract query from webhook payload\nconst query = $input.first().json.body.query || $input.first().json.query || '';\n\nif (!query) {\n  throw new Error('No query provided in request');\n}\n\n// Customer query patterns\nconst customerPatterns = [\n  /product\\s+inquiry/i,\n  /general\\s+support/i,\n  /sales\\s+question/i,\n  /billing\\s+inquiry/i,\n  /feature\\s+request/i,\n  /charged\\s+(twice|double|again)/i,\n  /subscription/i,\n  /refund/i,\n  /pricing/i,\n  /purchase/i,\n  /payment/i,\n  /invoice/i,\n  /account\\s+(issue|problem)/i,\n  /how\\s+to\\s+use/i,\n  /demo/i,\n  /trial/i,\n  /plan/i,\n  /upgrade/i,\n  /downgrade/i,\n  /cancel/i\n];\n\n// Admin query patterns\nconst adminPatterns = [\n  /technical\\s+escalation/i,\n  /system\\s+issue/i,\n  /security\\s+concern/i,\n  /data\\s+issue/i,\n  /integration\\s+problem/i,\n  /urgent/i,\n  /critical/i,\n  /emergency/i,\n  /api\\s+(down|error|issue|failure)/i,\n  /production\\s+systems?/i,\n  /server\\s+(down|error|crash|failure)/i,\n  /database\\s+(error|issue|corruption|down)/i,\n  /security\\s+breach/i,\n  /data\\s+(loss|corruption)/i,\n  /backup\\s+(failed|issue|error)/i,\n  /infrastructure/i,\n  /outage/i,\n  /vulnerability/i,\n  /hack/i,\n  /malware/i,\n  /breach/i\n];\n\n// Classification function\nfunction classifyQuery(queryText) {\n  const lowerQuery = queryText.toLowerCase();\n  \n  // Check admin patterns first (higher priority)\n  for (const pattern of adminPatterns) {\n    if (pattern.test(lowerQuery)) {\n      return 'admin';\n    }\n  }\n  \n  // Check customer patterns\n  for (const pattern of customerPatterns) {\n    if (pattern.test(lowerQuery)) {\n      return 'customer';\n    }\n  }\n  \n  // Default to customer for unclassified queries\n  return 'customer';\n}\n\nconst classification = classifyQuery(query);\nconst timestamp = new Date().toISOString();\nconst priority = classification === 'admin' ? 'HIGH' : 'NORMAL';\n\nconsole.log(`Query classified as: ${classification}`);\nconsole.log(`Priority: ${priority}`);\nconsole.log(`Original query: ${query}`);\n\nreturn {\n  query: query,\n  classification: classification,\n  priority: priority,\n  timestamp: timestamp,\n  processed: true\n};"
+      },
+      "id": "b2c3d4e5-f6g7-8h9i-0j1k-l2m3n4o5p6q7",
+      "name": "Classify Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all users from API response\nconst usersResponse = $('Fetch Users API').first().json;\nconst classification = $('Classify Query').first().json.classification;\nconst queryData = $('Classify Query').first().json;\n\n// Extract users array (handle different response structures)\nlet users = [];\nif (Array.isArray(usersResponse)) {\n  users = usersResponse;\n} else if (usersResponse.data && Array.isArray(usersResponse.data)) {\n  users = usersResponse.data;\n} else if (usersResponse.users && Array.isArray(usersResponse.users)) {\n  users = usersResponse.users;\n} else {\n  throw new Error('Could not extract users from API response');\n}\n\nconsole.log(`Total users fetched: ${users.length}`);\nconsole.log(`Looking for users with role: ${classification}`);\n\n// Filter function\nfunction filterUsersByRole(allUsers, targetRole) {\n  // Try to filter by existing role field\n  let filteredUsers = allUsers.filter(user => {\n    const userRole = (user.role || user.type || '').toLowerCase();\n    return userRole === targetRole.toLowerCase();\n  });\n  \n  console.log(`Found ${filteredUsers.length} users with exact role match`);\n  \n  // If no exact matches, simulate role assignment for demo\n  if (filteredUsers.length === 0) {\n    console.log('No exact role matches found, simulating role assignment...');\n    \n    if (targetRole === 'admin') {\n      // Assign admin role to users with ID divisible by 3\n      filteredUsers = allUsers.filter(user => user.id && user.id % 3 === 0).slice(0, 2);\n    } else {\n      // Assign customer role to other users\n      filteredUsers = allUsers.filter(user => user.id && user.id % 3 !== 0).slice(0, 3);\n    }\n    \n    // Add role property for clarity\n    filteredUsers = filteredUsers.map(user => ({\n      ...user,\n      role: targetRole,\n      assigned_role: true // Flag to show this was assigned for demo\n    }));\n  }\n  \n  return filteredUsers;\n}\n\nconst targetUsers = filterUsersByRole(users, classification);\n\nif (targetUsers.length === 0) {\n  throw new Error(`No users available for role: ${classification}`);\n}\n\nconsole.log(`Selected ${targetUsers.length} users for notification`);\n\n// Return user data with query information\nreturn targetUsers.map(user => ({\n  // User information\n  id: user.id,\n  name: user.name || `User ${user.id}`,\n  email: user.email,\n  role: user.role || classification,\n  assigned_role: user.assigned_role || false,\n  \n  // Query information\n  query: queryData.query,\n  classification: queryData.classification,\n  priority: queryData.priority,\n  timestamp: queryData.timestamp,\n  \n  // Email template data\n  subject_prefix: classification === 'admin' ? '[ADMIN - URGENT]' : '[CUSTOMER]',\n  urgency_text: classification === 'admin' ? 'URGENT ATTENTION REQUIRED' : 'Standard Support Request'\n}));"
+      },
+      "id": "c3d4e5f6-g7h8-9i0j-1k2l-m3n4o5p6q7r8",
+      "name": "Filter Users by Role",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.classification }}",
+              "rightValue": "admin",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "caseSensitive": false
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0j1k-2l3m-n4o5p6q7r8s9",
+      "name": "Route by Classification",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject_prefix }} {{ $json.urgency_text }}",
+        "emailFormat": "text",
+        "message": "=🚨 ADMIN ALERT - IMMEDIATE ACTION REQUIRED 🚨\\n\\n{{ $json.urgency_text }}\\n\\nClassification: {{ $json.classification.toUpperCase() }}\\nPriority: {{ $json.priority }}\\nTimestamp: {{ $json.timestamp }}\\n\\nAssigned to: {{ $json.name }} ({{ $json.email }})\\nUser Role: {{ $json.role }}{{ $json.assigned_role ? ' (Demo Assignment)' : '' }}\\n\\n--- SUPPORT REQUEST ---\\n{{ $json.query }}\\n--- END REQUEST ---\\n\\nThis is an administrative query requiring immediate technical attention.\\nPlease prioritize this request and respond within 1 hour.\\n\\n⚠️ If this is a security issue, follow emergency protocols immediately.\\n\\n---\\nAutomated n8n Email Routing System\\nWorkflow: Email Classification & Routing\\nGenerated: {{ $json.timestamp }}",
+        "options": {},
+        "additionalFields": {
+          "fromName": "Support System Alert"
+        }
+      },
+      "id": "e5f6g7h8-i9j0-1k2l-3m4n-o5p6q7r8s9t0",
+      "name": "Send Admin Alert Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 200],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-credentials-admin",
+          "name": "Gmail Admin Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject_prefix }} Support Request - Ticket #{{ $json.timestamp.slice(-6) }}",
+        "emailFormat": "text",
+        "message": "=Hello {{ $json.name }},\\n\\nNew customer support request received:\\n\\nTicket #: {{ $json.timestamp.slice(-6) }}\\nClassification: {{ $json.classification.toUpperCase() }}\\nPriority: {{ $json.priority }}\\nReceived: {{ $json.timestamp }}\\n\\nAssigned to: {{ $json.name }} ({{ $json.email }})\\nUser Role: {{ $json.role }}{{ $json.assigned_role ? ' (Demo Assignment)' : '' }}\\n\\n--- CUSTOMER REQUEST ---\\n{{ $json.query }}\\n--- END REQUEST ---\\n\\nPlease respond to this customer inquiry within 24 hours.\\nEnsure to follow up with the customer directly.\\n\\nFor urgent matters, please escalate to the admin team immediately.\\n\\n---\\nAutomated n8n Email Routing System\\nWorkflow: Email Classification & Routing\\nGenerated: {{ $json.timestamp }}\\n\\nBest regards,\\nSupport Team",
+        "options": {},
+        "additionalFields": {
+          "fromName": "Customer Support System"
+        }
+      },
+      "id": "f6g7h8i9-j0k1-2l3m-4n5o-p6q7r8s9t0u1",
+      "name": "Send Customer Support Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-credentials-support",
+          "name": "Gmail Support Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results from email sending\nconst allResults = $input.all();\nconst queryData = $('Classify Query').first().json;\n\n// Count successful email sends\nconst emailsSent = allResults.length;\nconst recipients = allResults.map(item => ({\n  name: item.json.name,\n  email: item.json.email,\n  role: item.json.role,\n  assigned_role: item.json.assigned_role || false\n}));\n\n// Calculate processing time\nconst startTime = new Date(queryData.timestamp);\nconst endTime = new Date();\nconst processingTimeMs = endTime - startTime;\n\nconst response = {\n  success: true,\n  message: \"Query processed and emails sent successfully\",\n  data: {\n    query: {\n      text: queryData.query,\n      classification: queryData.classification,\n      priority: queryData.priority,\n      timestamp: queryData.timestamp\n    },\n    processing: {\n      emails_sent: emailsSent,\n      processing_time_ms: processingTimeMs,\n      completed_at: endTime.toISOString()\n    },\n    recipients: recipients\n  },\n  workflow: {\n    name: \"Email Routing Workflow\",\n    version: \"1.0\",\n    node_count: 8\n  }\n};\n\nconsole.log('Workflow completed successfully');\nconsole.log(`Emails sent: ${emailsSent}`);\nconsole.log(`Processing time: ${processingTimeMs}ms`);\n\nreturn response;"
+      },
+      "id": "g7h8i9j0-k1l2-3m4n-5o6p-q7r8s9t0u1v2",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "h8i9j0k1-l2m3-4n5o-6p7q-r8s9t0u1v2w3",
+      "name": "Send Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Users API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Classify Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Users API": {
+      "main": [
+        [
+          {
+            "node": "Filter Users by Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Query": {
+      "main": [
+        [
+          {
+            "node": "Filter Users by Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Users by Role": {
+      "main": [
+        [
+          {
+            "node": "Route by Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Classification": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Customer Support Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Admin Alert Email": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Customer Support Email": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response": {
+      "main": [
+        [
+          {
+            "node": "Send Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "n8n-email-routing-instance"
+  },
+  "id": "email-routing-workflow",
+  "tags": [
+    "email",
+    "routing",
+    "classification",
+    "support",
+    "automation"
+  ],
+  "triggerCount": 1,
+  "createdAt": "2025-07-01T00:00:00.000Z",
+  "updatedAt": "2025-07-01T00:00:00.000Z"
+}
