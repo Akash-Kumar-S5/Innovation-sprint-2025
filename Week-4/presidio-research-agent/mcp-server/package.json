@@ -1,0 +1,24 @@
+{
+  "name": "presidio-google-docs-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Google Docs integration with Presidio Research Agent",
+  "main": "src/server.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "googleapis": "^128.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "keywords": ["mcp", "google-docs", "presidio", "research-agent"],
+  "author": "Presidio Research Team",
+  "license": "MIT"
+}
