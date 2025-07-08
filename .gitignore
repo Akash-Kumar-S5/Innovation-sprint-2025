@@ -1,0 +1,18 @@
+# Python virtual environment
+venv/
+ENV/
+env/
+.env
+*.txt
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+# Chroma DB files
+chroma_db/
+chroma_db
+credentials.json
