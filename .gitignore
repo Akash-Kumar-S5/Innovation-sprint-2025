@@ -3,7 +3,9 @@ venv/
 ENV/
 env/
 .env
+# Python related files
 *.txt
+!requirements.txt
 # Node.js dependencies
 node_modules/
 npm-debug.log*
